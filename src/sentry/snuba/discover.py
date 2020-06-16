@@ -79,7 +79,7 @@ def find_reference_event(reference_event):
     try:
         project_slug, event_id = reference_event.slug.split(":")
     except ValueError:
-        raise InvalidSearchQuery("Invalid reference event")
+        raise InvalidSearchQuery("Invalid reference event format")
 
     column_names = [
         resolve_discover_column(col) for col in reference_event.fields if is_real_column(col)
@@ -95,7 +95,7 @@ def find_reference_event(reference_event):
             status=ProjectStatus.VISIBLE,
         )
     except Project.DoesNotExist:
-        raise InvalidSearchQuery("Invalid reference event")
+        raise InvalidSearchQuery("Invalid reference event project")
 
     start = None
     end = None
@@ -109,6 +109,7 @@ def find_reference_event(reference_event):
     # structured fields like message, stack, and tags.
     event = raw_query(
         selected_columns=column_names,
+        # conditions=[["type", "=", "transaction"]],
         filter_keys={"project_id": [project.id], "event_id": [event_id]},
         start=start,
         end=end,
@@ -117,7 +118,7 @@ def find_reference_event(reference_event):
         referrer="discover.find_reference_event",
     )
     if "error" in event or len(event["data"]) != 1:
-        raise InvalidSearchQuery("Invalid reference event")
+        raise InvalidSearchQuery("Unable to find reference event")
 
     return event["data"][0]
 
