@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 
 from sentry import http
 from sentry import tagstore
+from sentry import options
 from sentry.api.fields.actor import Actor
 from sentry.incidents.logic import get_incident_aggregates
 from sentry.incidents.models import IncidentStatus
@@ -324,11 +325,12 @@ def build_incident_attachment(incident):
 
 # Different list types in slack that we'll use to resolve a channel name. Format is
 # (<list_name>, <result_name>, <prefix>).
-LIST_TYPES = [
+LEGACY_LIST_TYPES = [
     ("channels", "channels", CHANNEL_PREFIX),
     ("groups", "groups", CHANNEL_PREFIX),
     ("users", "members", MEMBER_PREFIX),
 ]
+LIST_TYPES = [("conversations", "channels", CHANNEL_PREFIX), ("users", "members", MEMBER_PREFIX)]
 
 
 def strip_channel_name(name):
@@ -357,8 +359,15 @@ def get_channel_id(organization, integration_id, name):
     payload = dict(token_payload, **{"exclude_archived": False, "exclude_members": True})
 
     session = http.build_session()
-    for list_type, result_name, prefix in LIST_TYPES:
-        # Slack limits the response of `<list_type>.list` to 1000 channels, paginate if
+
+    if options.get("slack.legacy-app") is True:
+        list_types = LEGACY_LIST_TYPES
+    else:
+        list_types = LIST_TYPES
+        payload = dict(payload, **{"types": "public_channel,private_channel"})
+
+    for list_type, result_name, prefix in list_types:
+        # Slack limits the response of `<list_type>.list` to 100 channels, paginate if
         # needed
         cursor = ""
         while cursor is not None:

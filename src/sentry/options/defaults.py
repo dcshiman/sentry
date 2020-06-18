@@ -121,6 +121,7 @@ register("cloudflare.secret-key", default="")
 register("slack.client-id", flags=FLAG_PRIORITIZE_DISK)
 register("slack.client-secret", flags=FLAG_PRIORITIZE_DISK)
 register("slack.verification-token", flags=FLAG_PRIORITIZE_DISK)
+register("slack.legacy-app", flags=FLAG_PRIORITIZE_DISK, type=Bool, default=True)
 
 # GitHub Integration
 register("github-app.id", default=0)
